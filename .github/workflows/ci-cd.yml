@@ -3,8 +3,6 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
 
 jobs:
   test:
@@ -68,7 +66,7 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Build Docker image
-      run: docker build -t genshin-app -f GenshinImpactManager/Dockerfile GenshinImpactManager
+      run: docker build -t genshin-app .
       
     - name: Verify Docker image
       run: docker images | grep genshin-app
