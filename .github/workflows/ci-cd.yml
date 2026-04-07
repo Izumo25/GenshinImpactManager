@@ -1,0 +1,76 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: genshin_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0
+    
+    - name: Install EF Core tools
+      run: dotnet tool install --global dotnet-ef
+    
+    - name: Restore dependencies
+      run: |
+        cd GenshinImpactManager
+        dotnet restore
+      
+    - name: Build
+      run: |
+        cd GenshinImpactManager
+        dotnet build --no-restore --configuration Release
+      
+    - name: Apply migrations
+      run: |
+        cd GenshinImpactManager
+        export DB_CONNECTION_STRING="Host=localhost;Database=genshin_db;Username=postgres;Password=postgres"
+        dotnet ef database update --connection "$DB_CONNECTION_STRING"
+      
+    - name: Functional test
+      run: |
+        cd GenshinImpactManager
+        export DB_CONNECTION_STRING="Host=localhost;Database=genshin_db;Username=postgres;Password=postgres"
+        dotnet run --urls "http://0.0.0.0:5000" &
+        sleep 15
+        curl -f http://localhost:5000 || exit 1
+
+  docker-build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Docker image
+      run: |
+        cd GenshinImpactManager
+        docker build -t genshin-app .
+      
+    - name: Verify Docker image
+      run: docker images | grep genshin-app

@@ -1,0 +1,26 @@
+﻿@page
+@using GenshinImpactManager.Data
+@inject AppDbContext DbContext
+@{
+    ViewData["Title"] = "Персонажи Genshin Impact";
+    var characters = DbContext.Characters.ToList();
+}
+
+<h1>Персонажи Genshin Impact</h1>
+
+<table border="1" cellpadding="5">
+    <thead>
+        <tr><th>ID</th><th>Имя</th><th>Элемент</th><th>Редкость</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var c in characters)
+        {
+            <tr>
+                <td>@c.Id</td>
+                <td>@c.Name</td>
+                <td>@c.Element</td>
+                <td>@c.Rarity ★</td>
+            </tr>
+        }
+    </tbody>
+</table>
